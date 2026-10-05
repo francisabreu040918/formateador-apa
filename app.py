@@ -143,12 +143,9 @@ if st.button("⚡ Procesar en Formato APA 7", type="primary"):
 
                 cliente = genai.Client(api_key=api_key)
                 response = cliente.models.generate_content(
-                    modelos_disponibles = [
-                "gemini-3.8-flash",
-                "gemini-3.5-flash-lite",
-                "gemini-3.1-pro",
-                "gemini-3.1-flash-lite"
-            ]
+                    model="gemini-3.8-flash",
+                    contents=instrucciones
+                )
 
                 if response.text:
                     st.session_state["resultado_apa"] = response.text
