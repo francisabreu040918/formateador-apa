@@ -1,4 +1,5 @@
 import io
+import time
 import streamlit as st
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
@@ -14,8 +15,8 @@ st.set_page_config(
 
 st.title("🎓 Generador & Formateador APA 7")
 st.markdown(
-    "Sube tu archivo o pega tu trabajo. La herramienta aplicará las normas "
-    "**APA 7ma edición** conservando tu contenido y te generará el documento **Word (.docx)** listo para entregar."
+    "Sube tu archivo o pega tu trabajo académico. La herramienta aplicará las normas "
+    "**APA 7ma edición** conservando tu contenido completo y generará tu documento **Word (.docx)** listo para entregar."
 )
 
 # 2. Clave desde los secretos de Streamlit
@@ -31,7 +32,7 @@ tipo_trabajo = st.selectbox(
     ]
 )
 
-# Opción para subir archivo .docx / .txt
+# Carga de archivo Word o texto plano
 archivo_subido = st.file_uploader("📂 Sube tu archivo (.docx o .txt) [Opcional]:", type=["docx", "txt"])
 
 texto_extraido_archivo = ""
@@ -49,18 +50,18 @@ texto_usuario = st.text_area(
     placeholder="Pega el trabajo completo o la lista de fuentes..."
 )
 
-# 4. Generación de Word con normas APA 7
+# 4. Generación de Word con normas APA 7 reglamentarias
 def generar_word_apa(texto_procesado, titulo="Trabajo Académico en Formato APA"):
     doc = Document()
 
-    # Márgenes reglamentarios: 2.54 cm (1 pulgada)
+    # Márgenes: 2.54 cm (1 pulgada en todos los lados)
     for section in doc.sections:
         section.top_margin = Inches(1)
         section.bottom_margin = Inches(1)
         section.left_margin = Inches(1)
         section.right_margin = Inches(1)
 
-    # Tipografía: Times New Roman 12, interlineado doble
+    # Estilo general: Times New Roman 12, interlineado doble
     style = doc.styles['Normal']
     font = style.font
     font.name = 'Times New Roman'
@@ -93,13 +94,13 @@ def generar_word_apa(texto_procesado, titulo="Trabajo Académico en Formato APA"
 
         p = doc.add_paragraph()
         if es_seccion_referencias:
-            # Sangría francesa (0.5 pulgadas)
+            # Sangría francesa reglamentaria (0.5 pulgadas)
             p.paragraph_format.left_indent = Inches(0.5)
             p.paragraph_format.first_line_indent = Inches(-0.5)
             p.alignment = WD_ALIGN_PARAGRAPH.LEFT
             p.add_run(linea_limpia)
         else:
-            # Sangría de primera línea (0.5 pulgadas)
+            # Sangría de primera línea para párrafos normales (0.5 pulgadas)
             p.paragraph_format.first_line_indent = Inches(0.5)
             p.alignment = WD_ALIGN_PARAGRAPH.LEFT
             p.add_run(linea_limpia)
@@ -109,46 +110,40 @@ def generar_word_apa(texto_procesado, titulo="Trabajo Académico en Formato APA"
     buffer.seek(0)
     return buffer
 
-# 5. Procesamiento con Gemini 3.8 Flash
+# 5. Procesamiento con Cascada de Modelos (Solo los 3 seleccionados)
 if st.button("⚡ Procesar en Formato APA 7", type="primary"):
     if not api_key:
         st.error("⚠️ Falta configurar la GEMINI_API_KEY en los Secrets.")
     elif not texto_usuario.strip():
         st.warning("⚠️ Debes subir un archivo o pegar texto en el cuadro superior.")
     else:
-        with st.spinner("Procesando documento bajo normas APA 7ma edición..."):
-            try:
-                # Instrucción dinámica según el tipo de trabajo seleccionado
-                if "Referencias bibliográficas" in tipo_trabajo:
-                    instrucciones = (
-                        "Eres un experto metodólogo universitario en normas APA 7ma edición.\n"
-                        "Tu tarea es procesar ÚNICAMENTE una lista de referencias bibliográficas.\n"
-                        "1. Organízalas alfabéticamente por apellido del autor.\n"
-                        "2. Aplica la estructura: Apellido, Inicial. (Año). Título. Editorial/Revista, DOI o URL.\n"
-                        "3. Encabeza con el título 'Referencias'. No agregues saludos ni explicaciones.\n\n"
-                        f"Contenido:\n{texto_usuario}"
-                    )
-                else:
-                    instrucciones = (
-                        "Eres un experto metodólogo universitario y revisor de estilo en normas APA 7ma edición.\n"
-                        "REGLA CRÍTICA Y OBLIGATORIA: NO RESUMAS NI OMITAS PÁRRAFOS. Conserva la TOTALIDAD del contenido original íntegro.\n\n"
-                        "Instrucciones de formato:\n"
-                        "1. Mantén todo el texto, desarrollo y argumentos del usuario.\n"
-                        "2. Corrige las citas en el texto para que cumplan estrictamente APA 7 (Apellido, Año).\n"
-                        "3. Estructura los títulos y subtítulos según los niveles APA.\n"
-                        "4. Al final del trabajo, genera la sección 'Referencias' con las fuentes citadas ordenadas alfabéticamente.\n"
-                        "5. No incluyas introducciones tuyas, comentarios ni notas al usuario. Devuelve el trabajo completo listo.\n\n"
-                        f"Contenido a formatear:\n{texto_usuario}"
-                    )
+        with st.spinner("Procesando documento con inteligencia artificial..."):
+            if "Referencias bibliográficas" in tipo_trabajo:
+                instrucciones = (
+                    "Eres un experto metodólogo universitario en normas APA 7ma edición.\n"
+                    "Tu tarea es procesar ÚNICAMENTE una lista de referencias bibliográficas.\n"
+                    "1. Organízalas alfabéticamente por apellido del autor.\n"
+                    "2. Aplica la estructura estricta: Apellido, Inicial. (Año). Título en cursiva. Editorial/Revista, DOI o URL.\n"
+                    "3. Encabeza con el título 'Referencias'. No agregues comentarios ni saludos.\n\n"
+                    f"Contenido:\n{texto_usuario}"
+                )
+            else:
+                instrucciones = (
+                    "Eres un experto metodólogo universitario y revisor de estilo en normas APA 7ma edición.\n"
+                    "REGLA ESTRICTA: NO RESUMAS NI OMITAS PÁRRAFOS. Conserva la totalidad de las ideas y párrafos originales del autor.\n\n"
+                    "Instrucciones de formato:\n"
+                    "1. Mantén todo el texto, desarrollo y argumentos del usuario.\n"
+                    "2. Verifica y corrige las citas en el texto para que cumplan estrictamente APA 7 (Apellido, Año).\n"
+                    "3. Estructura los títulos y subtítulos con jerarquía clara.\n"
+                    "4. Al final del trabajo, coloca el encabezado 'Referencias' con las fuentes citadas ordenadas alfabéticamente.\n"
+                    "5. No agregues introducciones tuyas ni notas de revisión. Devuelve únicamente el documento listo.\n\n"
+                    f"Contenido a formatear:\n{texto_usuario}"
+                )
 
-                # Lista completa de modelos disponibles por orden de prioridad y rapidez
             modelos_disponibles = [
                 "gemini-3.8-flash",
                 "gemini-3.5-flash-lite",
-                "gemini-3.1-pro",
-                "gemini-2.5-flash",
-                "gemini-2.5-flash-lite",
-                "gemini-2.5-pro"
+                "gemini-3.1-pro"
             ]
 
             cliente = genai.Client(api_key=api_key)
