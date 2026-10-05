@@ -101,7 +101,7 @@ def generar_word_apa(texto_procesado, titulo="Trabajo Académico en Formato APA"
     buffer.seek(0)
     return buffer
 
-# 5. Procesar con Gemini Flash Lite
+# 5. Procesar con Gemini (con respaldo automático anti-saturación)
 if st.button("⚡ Procesar en Formato APA 7", type="primary"):
     if not api_key:
         st.error("⚠️ Falta configurar la GEMINI_API_KEY en los Secrets.")
@@ -109,34 +109,48 @@ if st.button("⚡ Procesar en Formato APA 7", type="primary"):
         st.warning("⚠️ Debes pegar texto o fuentes en el cuadro superior.")
     else:
         with st.spinner("Organizando fuentes y aplicando normas APA 7ma edición..."):
-            try:
-                client = genai.Client(api_key=api_key)
+            instrucciones = (
+                "Eres un experto metodólogo universitario y revisor de estilo en normas APA 7ma edición.\n"
+                f"El usuario seleccionó: {tipo_trabajo}.\n\n"
+                "Instrucciones estrictas:\n"
+                "1. Transforma el contenido al formato oficial APA 7ma edición.\n"
+                "2. Si son referencias, ordénalas alfabéticamente por el apellido del autor. "
+                "Estructura: Apellido, Inicial. (Año). Título en cursiva. Editorial/Revista, DOI o URL.\n"
+                "3. Si es texto, verifica y corrige las citas parentéticas (Apellido, Año).\n"
+                "4. No agregues introducciones, saludos ni comentarios. Solo entrega el contenido final listo, "
+                "encabezado por 'Referencias' si corresponde.\n\n"
+                "Contenido a procesar:\n"
+                f"{texto_usuario}"
+            )
 
-                instrucciones = (
-                    "Eres un experto metodólogo universitario y revisor de estilo en normas APA 7ma edición.\n"
-                    f"El usuario seleccionó: {tipo_trabajo}.\n\n"
-                    "Instrucciones estrictas:\n"
-                    "1. Transforma el contenido al formato oficial APA 7ma edición.\n"
-                    "2. Si son referencias, ordénalas alfabéticamente por el apellido del autor. "
-                    "Estructura: Apellido, Inicial. (Año). Título en cursiva. Editorial/Revista, DOI o URL.\n"
-                    "3. Si es texto, verifica y corrige las citas parentéticas (Apellido, Año).\n"
-                    "4. No agregues introducciones, saludos ni comentarios. Solo entrega el contenido final listo, "
-                    "encabezado por 'Referencias' si corresponde.\n\n"
-                    "Contenido a procesar:\n"
-                    f"{texto_usuario}"
-                )
+            # Lista de modelos oficiales en orden de velocidad y disponibilidad
+            modelos_disponibles = [
+                "gemini-3.5-flash-lite",
+                "gemini-3.8-flash",
+                "gemini-3.1-flash-lite"
+            ]
 
-                response = client.models.generate_content(
-                    model="gemini-3.1-flash-lite",
-                    contents=instrucciones
-                )
+            cliente = genai.Client(api_key=api_key)
+            respuesta_obtenida = None
+            ultimo_error = None
 
-                st.session_state["resultado_apa"] = response.text
+            for modelo in modelos_disponibles:
+                try:
+                    response = cliente.models.generate_content(
+                        model=modelo,
+                        contents=instrucciones
+                    )
+                    respuesta_obtenida = response.text
+                    break # Si respondió con éxito, salimos del ciclo de inmediato
+                except Exception as err:
+                    ultimo_error = err
+                    continue # Si ese modelo tiene alta demanda, salta al siguiente
+
+            if respuesta_obtenida:
+                st.session_state["resultado_apa"] = respuesta_obtenida
                 st.success("¡Contenido formateado exitosamente!")
-
-            except Exception as e:
-                st.error(f"Error al procesar: {str(e)}")
-
+            else:
+                st.error(f"No fue posible procesar en este momento: {str(ultimo_error)}")
 # 6. Vista previa y entrega de código vía WhatsApp
 if "resultado_apa" in st.session_state:
     st.markdown("---")
