@@ -181,9 +181,15 @@ if "resultado_apa" in st.session_state:
                 twilio_client = Client(twilio_sid, twilio_token)
                 codigo = st.session_state["codigo_generado"]
 
+                destino_limpio = telefono_destino.strip()
+                if not destino_limpio.startswith("whatsapp:"):
+                    destino_final = f"whatsapp:{destino_limpio}"
+                else:
+                    destino_final = destino_limpio
+
                 mensaje = twilio_client.messages.create(
                     from_="whatsapp:+14155238886",
-                    to=f"whatsapp:{telefono_destino.strip()}",
+                    to=destino_final,
                     body=f"🎓 Formateador APA: Tu código de descarga de 6 dígitos es: {codigo}"
                 )
                 st.success("✅ ¡Código enviado a tu WhatsApp! Revisa tu iPhone.")
