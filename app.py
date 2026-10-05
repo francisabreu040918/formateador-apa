@@ -150,8 +150,7 @@ if st.button("⚡ Procesar en Formato APA 7", type="primary"):
                 st.session_state["resultado_apa"] = respuesta_obtenida
                 st.success("¡Contenido formateado exitosamente!")
             else:
-                st.error(f"No fue posible procesar en este momento: {str(ultimo_error)}")
-# 6. Vista previa y entrega de código vía WhatsApp
+ # 6. Vista previa y entrega de código vía WhatsApp directo
 if "resultado_apa" in st.session_state:
     st.markdown("---")
     st.subheader("📄 Vista Previa del Resultado")
@@ -159,54 +158,30 @@ if "resultado_apa" in st.session_state:
 
     st.markdown("---")
     st.subheader("📥 Descargar Documento Word (.docx)")
-    st.info("Para recibir tu código de acceso para la descarga oficial en Word, ingresa tu número con código de país (ejemplo: +1809... o +1829...):")
+    st.info("Para obtener tu código de descarga oficial en Word, solicítalo directamente a través de WhatsApp:")
 
-    if "codigo_generado" not in st.session_state:
-        st.session_state["codigo_generado"] = str(random.randint(100000, 999999))
+    # Código maestro de acceso (puedes cambiarlo cuando quieras)
+    CODIGO_ACCESO_MAESTRO = "APA2026"
 
-    col_tel, col_btn = st.columns([2, 1])
-    with col_tel:
-        telefono_destino = st.text_input("Tu WhatsApp:", placeholder="+18090000000")
-    with col_btn:
-        st.markdown("<br>", unsafe_allow_html=True)
-        boton_enviar_ws = st.button("📲 Recibir Código")
+    # Enlace a tu WhatsApp con mensaje predeterminado
+    mensaje_wa = "Hola, he generado mis referencias en formato APA 7 y deseo mi código de acceso para descargar el Word."
+    url_whatsapp = f"https://wa.me/18297631349?text={mensaje_wa.replace(' ', '%20')}"
 
-    if boton_enviar_ws:
-        if not twilio_sid or not twilio_token:
-            st.error("⚠️ Faltan las credenciales de Twilio en los Secrets.")
-        elif not telefono_destino.strip():
-            st.warning("⚠️ Ingresa tu identificador o número de WhatsApp.")
+    st.link_button("📲 Solicitar mi código por WhatsApp", url_whatsapp, type="primary")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    codigo_input = st.text_input("Introduce el código recibido:", type="password", placeholder="Ingresa el código aquí...")
+
+    if codigo_input:
+        if codigo_input.strip() == CODIGO_ACCESO_MAESTRO:
+            st.success("✅ ¡Código verificado con éxito! Tu descarga está desbloqueada:")
+            archivo_word = generar_word_apa(st.session_state["resultado_apa"])
+            st.download_button(
+                label="⬇️ Descargar archivo Word (.docx)",
+                data=archivo_word,
+                file_name="Trabajo_Formato_APA7.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
         else:
-            try:
-                twilio_client = Client(twilio_sid, twilio_token)
-                codigo = st.session_state["codigo_generado"]
-
-                destino_limpio = telefono_destino.strip()
-                if not destino_limpio.startswith("whatsapp:"):
-                    destino_final = f"whatsapp:{destino_limpio}"
-                else:
-                    destino_final = destino_limpio
-
-                mensaje = twilio_client.messages.create(
-                    from_="whatsapp:+14155238886",
-                    to=destino_final,
-                    body=f"🎓 Formateador APA: Tu código de descarga de 6 dígitos es: {codigo}"
-                )
-                st.success("✅ ¡Código enviado a tu WhatsApp! Revisa tu iPhone.")
-            except Exception as err:
-                st.error(f"Error de envío: {str(err)}")
-
-    # Verificación del código
-    codigo_input = st.text_input("Introduce el código de 6 dígitos que recibiste:", type="password")
-
-    if codigo_input and codigo_input.strip() == st.session_state.get("codigo_generado"):
-        st.success("¡Código verificado con éxito! Tu descarga está desbloqueada:")
-        archivo_word = generar_word_apa(st.session_state["resultado_apa"])
-        st.download_button(
-            label="⬇️ Descargar archivo Word (.docx)",
-            data=archivo_word,
-            file_name="Trabajo_Formato_APA7.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
-    elif codigo_input:
-        st.error("Código incorrecto. Verifica el mensaje en tu WhatsApp.")
+            st.error("Código incorrecto. Verifica el mensaje recibido en WhatsApp.")
+                st.error(f"No fue posible procesar en este momento: {str(ultimo_error)}")
