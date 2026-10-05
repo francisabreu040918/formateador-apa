@@ -1,5 +1,4 @@
 import io
-import json
 import random
 import streamlit as st
 from docx import Document
@@ -162,16 +161,16 @@ if "resultado_apa" in st.session_state:
         if not twilio_sid or not twilio_token:
             st.error("⚠️ Faltan las credenciales de Twilio en los Secrets.")
         elif not telefono_destino.strip().startswith("+"):
-            st.warning("⚠️ Recuerda escribir el número con el signo '+' y código de país (ejemplo: +1809...)")
+            st.warning("⚠️️ Recuerda escribir el número con el signo '+' y código de país (ejemplo: +1809...)")
         else:
             try:
-               twilio_client = Client(twilio_sid, twilio_token)
+                twilio_client = Client(twilio_sid, twilio_token)
                 codigo = st.session_state["codigo_generado"]
 
                 mensaje = twilio_client.messages.create(
                     from_="whatsapp:+14155238886",
                     to=f"whatsapp:{telefono_destino.strip()}",
-                    body=f"🎓 Formateador APA: Tu código de descarga es: {codigo}"
+                    body=f"🎓 Formateador APA: Tu código de descarga de 6 dígitos es: {codigo}"
                 )
                 st.success("✅ ¡Código enviado a tu WhatsApp! Revisa tu iPhone.")
             except Exception as err:
