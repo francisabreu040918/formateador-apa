@@ -1,9 +1,11 @@
 import io
+import random
 import streamlit as st
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from google import genai
+from twilio.rest import Client
 
 # 1. Configuración de la interfaz
 st.set_page_config(
@@ -19,8 +21,10 @@ st.markdown(
     "y te generará el documento **Word (.docx)** listo para entregar."
 )
 
-# 2. Obtener la clave de API desde los secretos de Streamlit
+# 2. Claves desde los secretos de Streamlit
 api_key = st.secrets.get("GEMINI_API_KEY", "")
+twilio_sid = st.secrets.get("TWILIO_ACCOUNT_SID", "")
+twilio_token = st.secrets.get("TWILIO_AUTH_TOKEN", "")
 
 # 3. Formulario principal
 tipo_trabajo = st.selectbox(
@@ -38,18 +42,18 @@ texto_usuario = st.text_area(
     placeholder="Ejemplo:\n- Sampieri metodología 2014 McGrawHill\n- https://scielo.org/articulo-ejemplo\n- Vygotsky teoría sociocultural..."
 )
 
-# 4. Función para crear el archivo Word con las reglas exactas de APA 7ma edición
+# 4. Generación de Word con normas APA 7
 def generar_word_apa(texto_procesado, titulo="Trabajo Académico en Formato APA"):
     doc = Document()
 
-    # Márgenes oficiales APA 7: 1 pulgada (2.54 cm) en todos los lados
+    # Márgenes: 2.54 cm (1 pulgada)
     for section in doc.sections:
         section.top_margin = Inches(1)
         section.bottom_margin = Inches(1)
         section.left_margin = Inches(1)
         section.right_margin = Inches(1)
 
-    # Tipografía oficial: Times New Roman 12 pt, interlineado doble
+    # Tipografía: Times New Roman 12, interlineado doble
     style = doc.styles['Normal']
     font = style.font
     font.name = 'Times New Roman'
@@ -58,13 +62,12 @@ def generar_word_apa(texto_procesado, titulo="Trabajo Académico en Formato APA"
     style.paragraph_format.line_spacing = 2.0
     style.paragraph_format.space_after = Pt(0)
 
-    # Título centrado en negrita (Nivel 1 APA)
+    # Título centrado
     p_titulo = doc.add_paragraph()
     p_titulo.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run_titulo = p_titulo.add_run(titulo)
     run_titulo.bold = True
 
-    # Recorrer las líneas devueltas por la IA
     lineas = texto_procesado.split("\n")
     es_seccion_referencias = False
 
@@ -73,7 +76,6 @@ def generar_word_apa(texto_procesado, titulo="Trabajo Académico en Formato APA"
         if not linea_limpia:
             continue
 
-        # Si detecta el encabezado de referencias
         if "referencias" in linea_limpia.lower() and len(linea_limpia) < 25:
             es_seccion_referencias = True
             p_ref = doc.add_paragraph()
@@ -83,31 +85,28 @@ def generar_word_apa(texto_procesado, titulo="Trabajo Académico en Formato APA"
             continue
 
         p = doc.add_paragraph()
-
         if es_seccion_referencias:
-            # Sangría francesa reglamentaria en APA: 0.5 pulgadas (1.27 cm)
+            # Sangría francesa reglamentaria
             p.paragraph_format.left_indent = Inches(0.5)
             p.paragraph_format.first_line_indent = Inches(-0.5)
             p.alignment = WD_ALIGN_PARAGRAPH.LEFT
             p.add_run(linea_limpia)
         else:
-            # Sangría normal de primera línea en APA
             p.paragraph_format.first_line_indent = Inches(0.5)
             p.alignment = WD_ALIGN_PARAGRAPH.LEFT
             p.add_run(linea_limpia)
 
-    # Guardar en memoria para descarga sin escribir en disco
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
     return buffer
 
-# 5. Botón para procesar con la IA
+# 5. Procesar con Gemini Flash Lite
 if st.button("⚡ Procesar en Formato APA 7", type="primary"):
     if not api_key:
-        st.error("⚠️ Falta configurar la GEMINI_API_KEY en los Secrets de Streamlit.")
+        st.error("⚠️ Falta configurar la GEMINI_API_KEY en los Secrets.")
     elif not texto_usuario.strip():
-        st.warning("⚠️ Debes pegar algún texto o fuente en el cuadro superior.")
+        st.warning("⚠️ Debes pegar texto o fuentes en el cuadro superior.")
     else:
         with st.spinner("Organizando fuentes y aplicando normas APA 7ma edición..."):
             try:
@@ -119,9 +118,9 @@ if st.button("⚡ Procesar en Formato APA 7", type="primary"):
                     "Instrucciones estrictas:\n"
                     "1. Transforma el contenido al formato oficial APA 7ma edición.\n"
                     "2. Si son referencias, ordénalas alfabéticamente por el apellido del autor. "
-                    "Asegura la estructura: Apellido, Inicial. (Año). Título en cursiva. Editorial/Revista, DOI o URL.\n"
+                    "Estructura: Apellido, Inicial. (Año). Título en cursiva. Editorial/Revista, DOI o URL.\n"
                     "3. Si es texto, verifica y corrige las citas parentéticas (Apellido, Año).\n"
-                    "4. No agregues introducciones, saludos ni comentarios. Solo entrega el contenido final listo para el documento, "
+                    "4. No agregues introducciones, saludos ni comentarios. Solo entrega el contenido final listo, "
                     "encabezado por 'Referencias' si corresponde.\n\n"
                     "Contenido a procesar:\n"
                     f"{texto_usuario}"
@@ -138,7 +137,7 @@ if st.button("⚡ Procesar en Formato APA 7", type="primary"):
             except Exception as e:
                 st.error(f"Error al procesar: {str(e)}")
 
-# 6. Mostrar el resultado y el bloqueo de cobro
+# 6. Vista previa y entrega de código vía WhatsApp
 if "resultado_apa" in st.session_state:
     st.markdown("---")
     st.subheader("📄 Vista Previa del Resultado")
@@ -146,23 +145,42 @@ if "resultado_apa" in st.session_state:
 
     st.markdown("---")
     st.subheader("📥 Descargar Documento Word (.docx)")
-    st.info("El archivo Word incluye los márgenes oficiales (2.54 cm), fuente Times New Roman 12, interlineado doble y la sangría francesa ya configurada.")
+    st.info("Para recibir tu código de acceso para la descarga oficial en Word, ingresa tu número con código de país (ejemplo: +1809... o +1829...):")
 
-    # Código de desbloqueo
-    CODIGO_VALIDO = "APA2026"
+    if "codigo_generado" not in st.session_state:
+        st.session_state["codigo_generado"] = str(random.randint(100000, 999999))
 
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        codigo_ingresado = st.text_input("Introduce tu código de acceso para desbloquear la descarga:", type="password")
-    with col2:
+    col_tel, col_btn = st.columns([2, 1])
+    with col_tel:
+        telefono_destino = st.text_input("Tu WhatsApp:", placeholder="+18090000000")
+    with col_btn:
         st.markdown("<br>", unsafe_allow_html=True)
-        numero_whatsapp = "18090000000" 
-        mensaje_ws = "Hola! Quiero mi código de acceso para descargar mi trabajo en formato APA."
-        url_whatsapp = f"https://wa.me/{numero_whatsapp}?text={mensaje_ws.replace(' ', '%20')}"
-        st.markdown(f"[📲 Solicitar código por WhatsApp]({url_whatsapp})")
+        boton_enviar_ws = st.button("📲 Recibir Código")
 
-    if codigo_ingresado == CODIGO_VALIDO:
-        st.success("¡Código correcto! Ya puedes descargar tu archivo:")
+    if boton_enviar_ws:
+        if not twilio_sid or not twilio_token:
+            st.error("⚠️ Faltan las credenciales de Twilio en los Secrets.")
+        elif not telefono_destino.strip().startswith("+"):
+            st.warning("⚠️ Recuerda escribir el número con el signo '+' y código de país (ejemplo: +1809...)")
+        else:
+            try:
+                twilio_client = Client(twilio_sid, twilio_token)
+                codigo = st.session_state["codigo_generado"]
+
+                mensaje = twilio_client.messages.create(
+                    from_="whatsapp:+14155238886",
+                    body=f"🎓 Formateador APA: Tu código de descarga de 6 dígitos es: {codigo}",
+                    to=f"whatsapp:{telefono_destino.strip()}"
+                )
+                st.success("✅ ¡Código enviado a tu WhatsApp! Revisa tu iPhone.")
+            except Exception as err:
+                st.error(f"Error de envío: {str(err)}")
+
+    # Verificación del código
+    codigo_input = st.text_input("Introduce el código de 6 dígitos que recibiste:", type="password")
+
+    if codigo_input and codigo_input.strip() == st.session_state.get("codigo_generado"):
+        st.success("¡Código verificado con éxito! Tu descarga está desbloqueada:")
         archivo_word = generar_word_apa(st.session_state["resultado_apa"])
         st.download_button(
             label="⬇️ Descargar archivo Word (.docx)",
@@ -170,5 +188,5 @@ if "resultado_apa" in st.session_state:
             file_name="Trabajo_Formato_APA7.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
-    elif codigo_ingresado != "":
-        st.error("Código incorrecto. Solicita tu código vía WhatsApp.")
+    elif codigo_input:
+        st.error("Código incorrecto. Verifica el mensaje en tu WhatsApp.")
