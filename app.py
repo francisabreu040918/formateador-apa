@@ -113,25 +113,25 @@ if st.button("⚡ Procesar en Formato APA 7", type="primary"):
             try:
                 client = genai.Client(api_key=api_key)
 
-                prompt = f"""
-                Eres un experto metodólogo universitario y revisor de estilo en normas APA 7ma edición.
-                El usuario seleccionó: '{tipo_trabajo}'.
+                instrucciones = (
+                    "Eres un experto metodólogo universitario y revisor de estilo en normas APA 7ma edición.\n"
+                    f"El usuario seleccionó: {tipo_trabajo}.\n\n"
+                    "Instrucciones estrictas:\n"
+                    "1. Transforma el contenido al formato oficial APA 7ma edición.\n"
+                    "2. Si son referencias, ordénalas alfabéticamente por el apellido del autor. "
+                    "Asegura la estructura: Apellido, Inicial. (Año). Título en cursiva. Editorial/Revista, DOI o URL.\n"
+                    "3. Si es texto, verifica y corrige las citas parentéticas (Apellido, Año).\n"
+                    "4. No agregues introducciones, saludos ni comentarios. Solo entrega el contenido final listo para el documento, "
+                    "encabezado por 'Referencias' si corresponde.\n\n"
+                    "Contenido a procesar:\n"
+                    f"{texto_usuario}"
+                )
 
-                Instrucciones estrictas:
-                1. Transforma el contenido al formato oficial APA 7ma edición.
-                2. Si son referencias, ordénalas alfabéticamente por el apellido del autor. Asegura la estructura: Apellido, Inicial. (Año). Título en cursiva. Editorial/Revista, DOI o URL.
-                3. Si es texto, verifica y corrige las citas parentéticas (Apellido, Año).
-                4. No agregues introducciones, saludos ni comentarios. Solo entrega el contenido final listo para el documento, encabezado por 'Referencias' si corresponde.
-
-Contenido del usuario:
-                """{texto_usuario}"""
-                """
-
-                # Modelo actual sugerido por la API de Google
                 response = client.models.generate_content(
                     model="gemini-3.8-flash",
-                    contents=prompt
+                    contents=instrucciones
                 )
+
                 st.session_state["resultado_apa"] = response.text
                 st.success("¡Contenido formateado exitosamente!")
 
@@ -156,7 +156,6 @@ if "resultado_apa" in st.session_state:
         codigo_ingresado = st.text_input("Introduce tu código de acceso para desbloquear la descarga:", type="password")
     with col2:
         st.markdown("<br>", unsafe_allow_html=True)
-        # Coloca aquí tu número con código de área (ej. 1809... o 1829...)
         numero_whatsapp = "18090000000" 
         mensaje_ws = "Hola! Quiero mi código de acceso para descargar mi trabajo en formato APA."
         url_whatsapp = f"https://wa.me/{numero_whatsapp}?text={mensaje_ws.replace(' ', '%20')}"
