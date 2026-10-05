@@ -141,21 +141,46 @@ if st.button("⚡ Procesar en Formato APA 7", type="primary"):
                         f"Contenido a formatear:\n{texto_usuario}"
                     )
 
-                cliente = genai.Client(api_key=api_key)
-                response = cliente.models.generate_content(
-                    model="gemini-3.8-flash",
-                    contents=instrucciones
-                )
+                # Lista completa de modelos disponibles por orden de prioridad y rapidez
+            modelos_disponibles = [
+                "gemini-3.8-flash",
+                "gemini-3.5-flash-lite",
+                "gemini-3.1-pro",
+                "gemini-2.5-flash",
+                "gemini-2.5-flash-lite",
+                "gemini-2.5-pro"
+            ]
 
-                if response.text:
-                    st.session_state["resultado_apa"] = response.text
-                    st.success("¡Documento formateado exitosamente!")
-                    st.rerun()
+            cliente = genai.Client(api_key=api_key)
+            respuesta_obtenida = None
+            modelo_usado = None
+            errores = []
 
-            except Exception as err:
-                st.error(f"Error al procesar: {str(err)}")
+            for modelo in modelos_disponibles:
+                try:
+                    response = cliente.models.generate_content(
+                        model=modelo,
+                        contents=instrucciones
+                    )
+                    if response and response.text:
+                        respuesta_obtenida = response.text
+                        modelo_usado = modelo
+                        break
+                except Exception as err:
+                    errores.append(f"{modelo}: {str(err)}")
+                    time.sleep(1)
+                    continue
 
-# 6. Vista previa y entrega de código vía WhatsApp directo
+            if respuesta_obtenida:
+                st.session_state["resultado_apa"] = respuesta_obtenida
+                st.success(f"¡Documento formateado con éxito usando {modelo_usado}!")
+                st.rerun()
+            else:
+                st.error("Los servidores de Google se encuentran ocupados temporalmente. Intenta nuevamente en unos instantes.")
+                with st.expander("Detalles técnicos del error"):
+                    st.write(errores)
+
+# 6. Vista previa y descarga mediante validación
 if "resultado_apa" in st.session_state:
     st.markdown("---")
     st.subheader("📄 Vista Previa del Resultado")
@@ -163,7 +188,7 @@ if "resultado_apa" in st.session_state:
 
     st.markdown("---")
     st.subheader("📥 Descargar Documento Word (.docx)")
-    st.info("Para obtener tu código de descarga oficial en Word, solicítalo directamente a través de WhatsApp:")
+    st.info("Para obtener tu código de descarga oficial en Word, solicítalo directamente por WhatsApp:")
 
     CODIGO_ACCESO_MAESTRO = "APA2026"
 
@@ -182,7 +207,7 @@ if "resultado_apa" in st.session_state:
             st.download_button(
                 label="⬇️ Descargar archivo Word (.docx)",
                 data=archivo_word,
-                file_name="Trabajo_Completo_APA7.docx",
+                file_name="Trabajo_APA7_Formateado.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
         else:
