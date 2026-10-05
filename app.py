@@ -128,7 +128,7 @@ if st.button("⚡ Procesar en Formato APA 7", type="primary"):
                 )
 
                 response = client.models.generate_content(
-                    model="gemini-3.8-flash",
+                    model="gemini-3.1-flash-lite",
                     contents=instrucciones
                 )
 
