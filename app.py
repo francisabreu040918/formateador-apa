@@ -165,15 +165,14 @@ if "resultado_apa" in st.session_state:
             st.warning("⚠️ Recuerda escribir el número con el signo '+' y código de país (ejemplo: +1809...)")
         else:
             try:
-                twilio_client = Client(twilio_sid, twilio_token)
+               twilio_client = Client(twilio_sid, twilio_token)
                 codigo = st.session_state["codigo_generado"]
 
                 mensaje = twilio_client.messages.create(
-                 from_="whatsapp:+14155238886",
-                 to=f"whatsapp:{telefono_destino.strip()}",
-                 content_sid="HXb5b62575e6e4ff6129ad7c8efe1f983e",
-                 content_variables=json.dumps({"1": "Código APA", "2": str(codigo)})
-             )
+                    from_="whatsapp:+14155238886",
+                    to=f"whatsapp:{telefono_destino.strip()}",
+                    body=f"🎓 Formateador APA: Tu código de descarga es: {codigo}"
+                )
                 st.success("✅ ¡Código enviado a tu WhatsApp! Revisa tu iPhone.")
             except Exception as err:
                 st.error(f"Error de envío: {str(err)}")
