@@ -123,8 +123,8 @@ if st.button("⚡ Procesar en Formato APA 7", type="primary"):
                 3. Si es texto, verifica y corrige las citas parentéticas (Apellido, Año).
                 4. No agregues introducciones, saludos ni comentarios. Solo entrega el contenido final listo para el documento, encabezado por 'Referencias' si corresponde.
 
-                Contenido del usuario:
-                \"\"\"{texto_usuario}\"\"\"
+Contenido del usuario:
+                """{texto_usuario}"""
                 """
 
                 # Modelo actual sugerido por la API de Google
@@ -132,7 +132,6 @@ if st.button("⚡ Procesar en Formato APA 7", type="primary"):
                     model="gemini-3.8-flash",
                     contents=prompt
                 )
-
                 st.session_state["resultado_apa"] = response.text
                 st.success("¡Contenido formateado exitosamente!")
 
