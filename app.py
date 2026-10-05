@@ -122,6 +122,7 @@ if st.button("⚡ Procesar en Formato APA 7", type="primary"):
             modelos_disponibles = [
                 "gemini-2.5-flash",
                 "gemini-2.5-flash-lite",
+                "gemini-2.5-pro",
                 "gemini-3.1-flash-lite"
             ]
 
