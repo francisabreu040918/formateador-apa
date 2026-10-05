@@ -174,8 +174,8 @@ if "resultado_apa" in st.session_state:
     if boton_enviar_ws:
         if not twilio_sid or not twilio_token:
             st.error("⚠️ Faltan las credenciales de Twilio en los Secrets.")
-        elif not telefono_destino.strip().startswith("+"):
-            st.warning("⚠️️ Recuerda escribir el número con el signo '+' y código de país (ejemplo: +1809...)")
+        elif not telefono_destino.strip():
+            st.warning("⚠️ Ingresa tu identificador o número de WhatsApp.")
         else:
             try:
                 twilio_client = Client(twilio_sid, twilio_token)
