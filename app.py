@@ -150,9 +150,6 @@ if st.button("⚡ Procesar en Formato APA 7", type="primary"):
                 "gemini-3.1-flash-lite"
             ]
 
-                    contents=instrucciones
-                )
-
                 if response.text:
                     st.session_state["resultado_apa"] = response.text
                     st.success("¡Documento formateado exitosamente!")
