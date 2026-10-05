@@ -127,8 +127,9 @@ if st.button("⚡ Procesar en Formato APA 7", type="primary"):
                 \"\"\"{texto_usuario}\"\"\"
                 """
 
+                # Modelo actual sugerido por la API de Google
                 response = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="gemini-3.8-flash",
                     contents=prompt
                 )
 
@@ -148,8 +149,7 @@ if "resultado_apa" in st.session_state:
     st.subheader("📥 Descargar Documento Word (.docx)")
     st.info("El archivo Word incluye los márgenes oficiales (2.54 cm), fuente Times New Roman 12, interlineado doble y la sangría francesa ya configurada.")
 
-    # Sistema de desbloqueo con código de acceso
-    # (Puedes cambiar "UNIVERSIDAD2026" por la clave que tú quieras darle a quienes te paguen)
+    # Código de desbloqueo
     CODIGO_VALIDO = "APA2026"
 
     col1, col2 = st.columns([2, 1])
@@ -157,8 +157,7 @@ if "resultado_apa" in st.session_state:
         codigo_ingresado = st.text_input("Introduce tu código de acceso para desbloquear la descarga:", type="password")
     with col2:
         st.markdown("<br>", unsafe_allow_html=True)
-        # Enlace a tu WhatsApp para que te escriban y te paguen
-        # Reemplaza '18090000000' por tu número de teléfono con código de país
+        # Coloca aquí tu número con código de área (ej. 1809... o 1829...)
         numero_whatsapp = "18090000000" 
         mensaje_ws = "Hola! Quiero mi código de acceso para descargar mi trabajo en formato APA."
         url_whatsapp = f"https://wa.me/{numero_whatsapp}?text={mensaje_ws.replace(' ', '%20')}"
