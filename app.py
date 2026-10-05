@@ -1,11 +1,9 @@
 import io
-import random
 import streamlit as st
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from google import genai
-from twilio.rest import Client
 
 # 1. Configuración de la interfaz
 st.set_page_config(
@@ -21,10 +19,8 @@ st.markdown(
     "y te generará el documento **Word (.docx)** listo para entregar."
 )
 
-# 2. Claves desde los secretos de Streamlit
+# 2. Clave desde los secretos de Streamlit
 api_key = st.secrets.get("GEMINI_API_KEY", "")
-twilio_sid = st.secrets.get("TWILIO_ACCOUNT_SID", "")
-twilio_token = st.secrets.get("TWILIO_AUTH_TOKEN", "")
 
 # 3. Formulario principal
 tipo_trabajo = st.selectbox(
@@ -104,7 +100,7 @@ def generar_word_apa(texto_procesado, titulo="Trabajo Académico en Formato APA"
 # 5. Procesar con Gemini (con respaldo automático anti-saturación)
 if st.button("⚡ Procesar en Formato APA 7", type="primary"):
     if not api_key:
-        st.error("⚠️ Falta configurar la GEMINI_API_KEY en los Secrets.")
+        st.error("⚠️️ Falta configurar la GEMINI_API_KEY en los Secrets.")
     elif not texto_usuario.strip():
         st.warning("⚠️ Debes pegar texto o fuentes en el cuadro superior.")
     else:
@@ -123,10 +119,9 @@ if st.button("⚡ Procesar en Formato APA 7", type="primary"):
                 f"{texto_usuario}"
             )
 
-            # Lista de modelos oficiales en orden de velocidad y disponibilidad
             modelos_disponibles = [
-                "gemini-3.5-flash-lite",
-                "gemini-3.8-flash",
+                "gemini-2.5-flash",
+                "gemini-2.5-flash-lite",
                 "gemini-3.1-flash-lite"
             ]
 
@@ -141,16 +136,18 @@ if st.button("⚡ Procesar en Formato APA 7", type="primary"):
                         contents=instrucciones
                     )
                     respuesta_obtenida = response.text
-                    break # Si respondió con éxito, salimos del ciclo de inmediato
+                    break
                 except Exception as err:
                     ultimo_error = err
-                    continue # Si ese modelo tiene alta demanda, salta al siguiente
+                    continue
 
             if respuesta_obtenida:
                 st.session_state["resultado_apa"] = respuesta_obtenida
                 st.success("¡Contenido formateado exitosamente!")
             else:
- # 6. Vista previa y entrega de código vía WhatsApp directo
+                st.error(f"No fue posible procesar en este momento: {str(ultimo_error)}")
+
+# 6. Vista previa y entrega de código vía WhatsApp directo
 if "resultado_apa" in st.session_state:
     st.markdown("---")
     st.subheader("📄 Vista Previa del Resultado")
@@ -184,4 +181,3 @@ if "resultado_apa" in st.session_state:
             )
         else:
             st.error("Código incorrecto. Verifica el mensaje recibido en WhatsApp.")
-                st.error(f"No fue posible procesar en este momento: {str(ultimo_error)}")
